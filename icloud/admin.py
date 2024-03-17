@@ -180,12 +180,12 @@ class AccountAdmin(AjaxAdmin):
     two_factor_authenticate.layer = async_get_layer_config
 
     def isActive(self, obj: AppleId):
-        global iService
-        if iService is not None:
-            if obj.username == iService.user.get("accountName"):
-                return '<el-radio value="1" label="1">已被选中</el-radio>'
-        else:
-            return '<el-radio value="1" label="2"><a href="#">点击选择</a></el-radio>'
+        # FIXME: 修复这里,改成2FA验证是否还有效.
+        # if iService is not None:
+        #     if obj.username == iService.user.get("accountName"):
+        #         return '<el-radio value="1" label="1">已被选中</el-radio>'
+        # else:
+        return '<el-radio value="1" label="2"><a href="#">点击选择</a></el-radio>'
 
     isActive.short_description = "被选中"
 
@@ -644,7 +644,7 @@ class IMediaAdmin(AjaxAdmin):
             if value:
                 return f"""<img src="{value}" style="height:100px;">"""
         if field_name == "duration":
-            if value:
+            if value and value != 0:
                 return f"""<span title="{value}">{human_readable_time(value)}</span>"""
         return value
 
