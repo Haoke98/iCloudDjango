@@ -15,13 +15,13 @@ SIMPLEUI_CONFIG = {
         {
             'name': 'GitHub',
             'icon': 'fas fa-code',
-            'url': 'https://haoke98.github.io/AllKeeper/',
+            'url': 'https://github.com/Haoke98/iCloudDjango',
             'codename': 'community'
         },
         {
             'name': 'Bug反馈',
             'icon': 'fas fa-bug',
-            'url': 'https://github.com/Haoke98/AllKeeper/issues',
+            'url': 'https://github.com/Haoke98/iCloudDjango/issues',
             'codename': 'bug_trace',
             'newTab': True
         },
