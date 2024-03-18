@@ -1,0 +1,2 @@
+django-celery-beat>=2.6.0
+django-celery-results~=2.5.1

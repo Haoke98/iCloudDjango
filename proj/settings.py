@@ -19,6 +19,7 @@ from . import secret
 from .secret import MEDIA_ROOT, CSRF_TRUSTED_ORIGINS, MINIO_STORAGE_ENDPOINT, MINIO_STORAGE_ACCESS_KEY, \
     MINIO_STORAGE_SECRET_KEY
 from .simpleUISettings import *
+
 SECURE_CROSS_ORIGIN_OPENER_POLICY = 'none'
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -184,7 +185,10 @@ INSTALLED_APPS = [
     'docutils',
     'sortedm2m',
     'django_crontab',
+    'django_celery_beat',
+    'django_celery_results',
     'icloud',
+    'celery_task_manager',
 ]
 SITE_ID = 1
 CACHES = {
