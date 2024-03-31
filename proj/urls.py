@@ -27,6 +27,7 @@ from revproxy.views import ProxyView
 import icloud.urls
 from proj import settings
 from . import _STATIC_URL
+
 ADMIN_PATH = os.getenv('ADMIN_PATH')
 # 网站标签页名称
 admin.site.site_title = "iCloudDjango"
@@ -35,13 +36,10 @@ admin.site.site_header = 'iCloudDjango'
 
 admin.autodiscover()
 urlpatterns = [
-    path(f"{ADMIN_PATH}/", admin.site.urls),
-    path('admin/doc/', include('django.contrib.admindocs.urls')),
+    path(f"{ADMIN_PATH}/", admin.site.urls), path('admin/doc/', include('django.contrib.admindocs.urls')),
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
     re_path('^icloud/', include(icloud.urls)),
     path("favicon.ico", RedirectView.as_view(url=_STATIC_URL + 'favicon.ico')),
     re_path(r'^static/(?P<path>.*)$', serve, ({'document_root': settings.STATIC_ROOT})),
-    path('sp/', include('simplepro.urls')),
-    # 添加新的路由时必须在此上方进行添加, 千万不要放在下方(不会进行解析和路由).
-    # re_path(r'^(?P<path>.*)$', ProxyView.as_view(upstream="https://sdc.mldoo.com", add_remote_user=True)),
+    path('sp/', include('simplepro.urls')), path('celery/', include('django_celery_stack.urls'))
 ]

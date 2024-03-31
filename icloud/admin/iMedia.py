@@ -7,11 +7,11 @@
 @disc:
 ======================================="""
 import os
-import threading
 import urllib
 from datetime import datetime
 from urllib.parse import urlencode
 
+from celery import current_app
 from django.contrib import admin
 from django.http import JsonResponse
 from simplepro.decorators import layer, button
@@ -21,7 +21,7 @@ from simpleui.admin import AjaxAdmin
 from icloud.models import LocalMedia, IMedia, AppleId
 from utils import icloud, human_readable_bytes, human_readable_time
 from .album import get_sync_layer_config
-from ..services import collect_all_medias, migrateIcloudToLocal, delete_from_icloud
+from ..services import migrateIcloudToLocal, delete_from_icloud
 from ..views import DLT
 
 
@@ -162,19 +162,6 @@ class IMediaAdmin(AjaxAdmin):
         res = super().get_paginator(request, queryset, per_page, orphans, allow_empty_first_page)
         return res
 
-    # 也可以是方法的形式来返回html
-    def get_top_html(self, request):
-        return f'''
-        <el-collapse accordion>
-            <el-collapse-item>
-                <template slot="title">
-                    同步进度监控<i class="header-icon el-icon-info"></i>
-                </template>
-                <iframe style="width:100%;height:200px;" src="/static/iMedia_list_top.html"></iframe>
-            </el-collapse-item>
-        </el-collapse>
-        '''
-
     def has_add_permission(self, request):
         return False
 
@@ -205,12 +192,22 @@ class IMediaAdmin(AjaxAdmin):
                     'msg': '需要先去做二次验证, 此页面无法验证'
                 })
             else:
-                th = threading.Thread(target=collect_all_medias, args=(_iService,))
-                th.start()
-                return {
-                    'state': True,
-                    'msg': f'采集程序已经启动'
-                }
+                loader = current_app.loader
+                loader.autodiscover_tasks(packages=['icloud'])
+                task_name = "icloud.tasks.sync_list"
+                task = current_app.tasks.get(task_name)
+                if task:
+                    task_id = task.apply_async(kwargs={'apple_id': apple_id}, queue="celery",
+                                               periodic_task_name="同步iMedia列表")
+                    return {
+                        'state': True,
+                        'msg': f'采集程序已经启动({task_id})'
+                    }
+                else:
+                    return {
+                        'state': False,
+                        'msg': f'无法找到任务[{task_name}]'
+                    }
 
     @button(type='warning', short_description='数据迁移', enable=False, confirm="您确定从icloud迁移到本地吗？")
     def migrate(self, request, queryset):
