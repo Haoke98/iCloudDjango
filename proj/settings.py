@@ -302,7 +302,7 @@ CELERY_TIMEZONE = "Asia/Shanghai"
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 
-CELERY_RESULT_BACKEND = "celery_task_manager.backends:CustomDatabaseBackend"
+CELERY_RESULT_BACKEND = "django_celery_stack.backends:CustomDatabaseBackend"
 CELERY_RESULT_EXTENDED = True
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_CACHE_BACKEND = "django-cache"
