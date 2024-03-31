@@ -1,10 +1,12 @@
 import logging
+import os
 
 import jwt
 from django.utils.deprecation import MiddlewareMixin
 
-from proj.secret import JWT_SIGNATURE
 from utils.http_helper import RestResponse
+
+JWT_SIGNATURE = os.getenv("DB_ENGINE")
 
 
 class AuthCheck(MiddlewareMixin):

@@ -15,15 +15,14 @@ import mimetypes
 import os
 from pathlib import Path
 
-from . import secret
-from .secret import MEDIA_ROOT, CSRF_TRUSTED_ORIGINS, MINIO_STORAGE_ENDPOINT, MINIO_STORAGE_ACCESS_KEY, \
-    MINIO_STORAGE_SECRET_KEY
+from dotenv import load_dotenv
+
 from .simpleUISettings import *
 
 SECURE_CROSS_ORIGIN_OPENER_POLICY = 'none'
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 LOG_FILE_DIR = os.path.join(BASE_DIR, 'log')
 if not os.path.exists(LOG_FILE_DIR):
     os.mkdir(LOG_FILE_DIR)
@@ -62,27 +61,12 @@ if not os.path.exists(STATIC_ROOT):
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = secret.SECRET_KEY
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-from . import _DEBUG
-
-DEBUG = _DEBUG
-
 ALLOWED_HOSTS = ['*']
 
 APPEND_SLASH = True
-
-ADMINS = (('Sadam·Sadik', '1903249375@qq.com'),)  # 接受报错的账号
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_USE_SSL = True
-EMAIL_HOST = 'smtp.qq.com'  # 如果是 163 改成 smtp.163.com
-EMAIL_PORT = 465
-EMAIL_HOST_USER = secret.SMTP_EMAIL  # 帐号
-EMAIL_HOST_PASSWORD = secret.SMTP_PASSWORD  # 密码(用第三方平台登陆授权码）
-SERVER_EMAIL = EMAIL_HOST_USER  # 必须要设置 不然logger中得handler：admin_Email 无法发送错误报告邮件，  SERVER_EMAIL必须和 EMAIL_HOST_USER一样才能成功发送
-DEFAULT_FROM_EMAIL = f'SadamSadik <{secret.SMTP_EMAIL}>'
 
 LOG_REQUEST_ID_HEADER = "HTTP_X_REQUEST_ID"
 GENERATE_REQUEST_ID_IF_NOT_IN_HEADER = True
@@ -240,12 +224,12 @@ WSGI_APPLICATION = 'proj.wsgi.application'
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 DATABASES = {
     'default': {
-        'ENGINE': secret.DB_BACKEND,
-        'NAME': secret.DB_DATABASE,
-        'HOST': secret.DB_HOST,
-        'PORT': secret.DB_PORT,
-        'USER': secret.DB_USERNAME,
-        'PASSWORD': secret.DB_PASSWORD,
+        'ENGINE': os.getenv("DB_BACKEND"),
+        'NAME': os.getenv("DB_DATABASE"),
+        'HOST': os.getenv("DB_HOST"),
+        'PORT': os.getenv("DB_PORT"),
+        'USER': os.getenv("DB_USERNAME"),
+        'PASSWORD': os.getenv("DB_PASSWORD"),
         'CONN_MAX_AGE': 0,
         'OPTIONS': {
         },
