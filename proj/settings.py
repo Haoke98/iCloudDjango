@@ -23,6 +23,9 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = 'none'
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(os.path.join(BASE_DIR, '.env'))
+SECRET_KEY = os.getenv('SECRET_KEY')
+DEBUG = os.getenv('DEBUG')
+
 LOG_FILE_DIR = os.path.join(BASE_DIR, 'log')
 if not os.path.exists(LOG_FILE_DIR):
     os.mkdir(LOG_FILE_DIR)
@@ -289,6 +292,9 @@ STATICFILES_STORAGE = "minio_storage.storage.MinioStaticStorage"
 # 因为MINIO中不光存储静态资源还会存储动态资源,相对比较铭感,必须强制加密通信
 MINIO_STORAGE_USE_HTTPS = True
 MINIO_STORAGE_CERT_CHECK = False
+MINIO_STORAGE_ENDPOINT = os.getenv('MINIO_STORAGE_ENDPOINT')
+MINIO_STORAGE_ACCESS_KEY = os.getenv('MINIO_STORAGE_ACCESS_KEY')
+MINIO_STORAGE_SECRET_KEY = os.getenv('MINIO_STORAGE_SECRET_KEY')
 MINIO_STORAGE_MEDIA_OBJECT_METADATA = {"Cache-Control": "max-age=1000"}
 MINIO_STORAGE_MEDIA_BUCKET_NAME = 'icloud-django-media'
 MINIO_STORAGE_MEDIA_BACKUP_BUCKET = 'icloud-django-bin'
