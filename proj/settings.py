@@ -295,3 +295,21 @@ MINIO_STORAGE_MEDIA_BACKUP_BUCKET = 'icloud-django-bin'
 MINIO_STORAGE_MEDIA_BACKUP_FORMAT = '%c/'
 MINIO_STORAGE_AUTO_CREATE_MEDIA_BUCKET = True
 MINIO_STORAGE_STATIC_BUCKET_NAME = 'icloud-django-static'
+
+
+# Celery Configuration Options
+CELERY_TIMEZONE = "Asia/Shanghai"
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60
+
+CELERY_RESULT_BACKEND = "celery_task_manager.backends:CustomDatabaseBackend"
+CELERY_RESULT_EXTENDED = True
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_CACHE_BACKEND = "django-cache"
+
+# celery升到5.3后使用原来的启动命令会出警告，加上这个配置后就不会了
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+# 会减少Worker中任务执行时因通信和状态更新而引发的性能缩水, 但是会增加BROKER的负载, 很有可能出现宕机等状况.
+# CELERY_BROKER_CONNECTION_MAX_RETRIES = None
+
+FLOWER_UNAUTHENTICATED_API = True

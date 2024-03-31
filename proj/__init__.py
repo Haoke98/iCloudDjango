@@ -1,7 +1,9 @@
 import logging
 import os
 import platform
+from .celery import app as celery_app
 
+__all__ = ('celery_app',)
 _STATIC_URL = '/static/'
 WINDOWS = 'Windows'
 LINUX = 'Linux'
