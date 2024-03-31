@@ -1,2 +1,2 @@
-django-celery-beat>=2.6.0
-django-celery-results~=2.5.1
+django-celery-stack>=1.0.1
+git+https://github.com/Haoke98/django-minio-storage

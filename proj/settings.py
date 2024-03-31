@@ -188,7 +188,7 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'django_celery_results',
     'icloud',
-    'celery_task_manager',
+    'django_celery_stack',
 ]
 SITE_ID = 1
 CACHES = {
@@ -304,6 +304,7 @@ DEFAULT_FILE_STORAGE = "minio_storage.storage.MinioMediaStorage"
 STATICFILES_STORAGE = "minio_storage.storage.MinioStaticStorage"
 # 因为MINIO中不光存储静态资源还会存储动态资源,相对比较铭感,必须强制加密通信
 MINIO_STORAGE_USE_HTTPS = True
+MINIO_STORAGE_CERT_CHECK = False
 MINIO_STORAGE_MEDIA_OBJECT_METADATA = {"Cache-Control": "max-age=1000"}
 MINIO_STORAGE_MEDIA_BUCKET_NAME = 'icloud-django-media'
 MINIO_STORAGE_MEDIA_BACKUP_BUCKET = 'icloud-django-bin'
