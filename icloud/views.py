@@ -8,14 +8,12 @@ from django.core.files.storage import default_storage
 from django.http import HttpResponse, JsonResponse, Http404, HttpResponseRedirect
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
-from minio import Minio
-from minio_storage.storage import get_setting
 from pytz import UTC
 
-from proj.settings import MINIO_STORAGE_MEDIA_BUCKET_NAME, MINIO_STORAGE_USE_HTTPS, MINIO_STORAGE_CERT_CHECK
+from proj.settings import MINIO_STORAGE_MEDIA_BUCKET_NAME
 from .models import IMedia, LocalMedia
 from .serializers import LocalMediaSerializer
-from .services import update, create_icloud_service, collect
+from .services import update, create_icloud_service, collect, s3_client
 
 DLT = datetime.timedelta(hours=1)
 
@@ -23,17 +21,6 @@ VIDE_PLAYER_TYPE_MAP = {
     ".MP4": "video/mp4",
     ".MOV": "video/quicktime",
 }
-
-MINIO_STORAGE_ENDPOINT = get_setting("MINIO_STORAGE_ENDPOINT")
-MINIO_STORAGE_ACCESS_KEY = get_setting("MINIO_STORAGE_ACCESS_KEY")
-MINIO_STORAGE_SECRET_KEY = get_setting("MINIO_STORAGE_SECRET_KEY")
-minio_client = Minio(
-    endpoint=MINIO_STORAGE_ENDPOINT,
-    access_key=MINIO_STORAGE_ACCESS_KEY,
-    secret_key=MINIO_STORAGE_SECRET_KEY,
-    secure=MINIO_STORAGE_USE_HTTPS,  # 根据你的MinIO服务器是否使用HTTPS来设置
-    cert_check=MINIO_STORAGE_CERT_CHECK
-)
 
 
 def test(request):
@@ -150,7 +137,7 @@ def preview(request):
         except ValueError as e:
             if "The 'prv' attribute has no file associated with it." in str(e):
                 prv_object_name = targetObj.origin.name
-        download_url = minio_client.presigned_get_object(
+        download_url = s3_client.presigned_get_object(
             bucket_name=MINIO_STORAGE_MEDIA_BUCKET_NAME,
             object_name=prv_object_name,
             expires=datetime.timedelta(minutes=5)

@@ -212,13 +212,24 @@ class IMediaAdmin(AjaxAdmin):
     @button(type='warning', short_description='数据迁移', enable=False, confirm="您确定从icloud迁移到本地吗？")
     def migrate(self, request, queryset):
         ids = request.POST.get('ids').replace(" ", "+").split(",")
-        objs = IMedia.objects.filter(id__in=ids).all()
-        for i, qs in enumerate(objs):
-            migrateIcloudToLocal(qs)
-        return {
-            'state': True,
-            'msg': f'迁移开始！'
-        }
+        loader = current_app.loader
+        loader.autodiscover_tasks(packages=['icloud'])
+        task_name = "icloud.tasks.migrate"
+        task = current_app.tasks.get(task_name)
+        if task:
+            for i, iMedia_id in enumerate(ids):
+                task_id = task.apply_async(kwargs={'icloud_media_id': iMedia_id},
+                                           queue="celery",
+                                           periodic_task_name="迁移iMedia2LocMedia")
+            return {
+                'state': True,
+                'msg': f'迁移开始！({len(ids)})'
+            }
+        else:
+            return {
+                'state': False,
+                'msg': f'无法找到任务[{task_name}]'
+            }
 
     @button(type='error', short_description='从iCloud中删除', enable=False, confirm="您确定从icloud迁移到本地吗？")
     def delete(self, request, queryset):

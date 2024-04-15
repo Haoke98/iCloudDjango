@@ -7,10 +7,13 @@
 @disc:
 ======================================="""
 import datetime
+import hashlib
+import io
 import json
 import logging
 import math
 import os
+import tempfile
 import threading
 import time
 import traceback
@@ -20,12 +23,27 @@ import ffmpeg
 import requests
 from PIL import Image
 from django.core.files.base import ContentFile, File
+from django.core.files.storage import default_storage
 from django.core.files.temp import NamedTemporaryFile
+from minio import Minio, S3Error
+from minio_storage.storage import get_setting
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from pyicloud.services.photos import PhotoAsset
 
+from proj.settings import MINIO_STORAGE_USE_HTTPS, MINIO_STORAGE_CERT_CHECK, MINIO_STORAGE_MEDIA_BUCKET_NAME
 from utils.icloud import IcloudService
 from .models import IMedia, LocalMedia, AppleId
+
+MINIO_STORAGE_ENDPOINT = get_setting("MINIO_STORAGE_ENDPOINT")
+MINIO_STORAGE_ACCESS_KEY = get_setting("MINIO_STORAGE_ACCESS_KEY")
+MINIO_STORAGE_SECRET_KEY = get_setting("MINIO_STORAGE_SECRET_KEY")
+s3_client = Minio(
+    endpoint=MINIO_STORAGE_ENDPOINT,
+    access_key=MINIO_STORAGE_ACCESS_KEY,
+    secret_key=MINIO_STORAGE_SECRET_KEY,
+    secure=MINIO_STORAGE_USE_HTTPS,  # 根据你的MinIO服务器是否使用HTTPS来设置
+    cert_check=MINIO_STORAGE_CERT_CHECK
+)
 
 CHUNK_SIZE = 1024 * 1024  # 每个文件块的大小（字节）1M
 
@@ -250,21 +268,79 @@ def download_prv(source: IMedia, dest: LocalMedia):
         raise Exception("iCloud预览数据异常")
 
 
+def calculate_md5(chunk):
+    md5 = hashlib.md5()
+    md5.update(chunk)
+    return md5.hexdigest()
+
+
+headers = {'Content-Type': 'application/octet-stream'}
+
+
+def save_to_s3(file_part, object_name: str, part_number: int, upload_id: str):
+    # 上传文件分片，内网测试耗时约：0.45秒
+    headers['Content-Md5'] = calculate_md5(file_part)
+    etag = s3_client._upload_part(data=file_part, bucket_name=MINIO_STORAGE_MEDIA_BUCKET_NAME, object_name=object_name,
+                                  part_number=part_number, upload_id=upload_id, headers=headers)
+
+    return etag
+
+
 def download_origin(source: IMedia, dest: LocalMedia):
     """"
     com.apple.quicktime-movie
     """
+    global headers
     fields: dict = json.loads(source.masterRecord)['fields']
-    downloadURL = fields['resOriginalRes']['value']['downloadURL']
-    originResp = requests.get(downloadURL, stream=True)
-    temp_file = NamedTemporaryFile(delete=True)
-    for chunk in originResp.iter_content(chunk_size=CHUNK_SIZE):
-        if chunk:
-            temp_file.write(chunk)
-    temp_file.seek(0)
-    file_obj = File(temp_file, name=f"{source.filename}.{source.ext}")
-    dest.origin = file_obj
-    dest.save()
+    originalResValue = fields['resOriginalRes']['value']
+    fileChecksum = originalResValue['fileChecksum']
+    size = originalResValue['size']
+    downloadURL = originalResValue['downloadURL']
+    originResp = requests.get(downloadURL)
+    part_number = 1
+    # 创建一个分块上传的 session
+    objName = "LocalMedia/origin/" + dest.filename
+    logging.info("ObjName: " + objName)
+    logging.info("originResp-Headers:" + str(originResp.headers))
+
+    logging.info("Headers:" + str(headers))
+    # FIXME: 后期继续实现分片上传
+    # 获取分片上传ID
+    # upload_id = s3_client._create_multipart_upload(MINIO_STORAGE_MEDIA_BUCKET_NAME, objName, headers)
+    # logging.info(f"Upload ID: {upload_id}")
+    # _parts = []
+    temp_file_name = ""
+    # 创建临时文件
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        temp_file_name = temp_file.name
+        logging.info("temp_file_name: " + temp_file_name)
+        for chunk in originResp.iter_content(chunk_size=CHUNK_SIZE):
+            if chunk:
+                temp_file.write(chunk)
+                logging.info(f"Chunk {part_number} 下载成功, 并写入到了: {temp_file_name}")
+            # TODO: 需要在这里进行进度同步操作, 计算每一个chunk的大小和剩下content的大小
+            # 获取分片上传url
+            # url = minio_client.get_presigned_url(
+            #     "PUT",
+            #     MINIO_STORAGE_MEDIA_BUCKET_NAME,
+            #     objName,
+            #     expires=datetime.timedelta(days=1),
+            #     extra_query_params={"partNumber": str(part_number), "uploadId": upload_id}
+            # )
+            # logging.info(f"Uploading chunk {part_number}...")
+            # etag = save_to_s3(chunk, objName, part_number, upload_id)
+            # # 将上传的分片添加到分片列表
+            # _parts.append((part_number, etag))
+            # print(f"Uploaded part {part_number}")
+            part_number += 1
+    # response = s3_client._complete_multipart_upload(MINIO_STORAGE_MEDIA_BUCKET_NAME, objName, upload_id, _parts)
+    # print(f"upload id: {upload_id}, parts: {_parts}")
+    # temp_file.seek(0)
+        default_storage.save(objName, temp_file)
+        # s3_client.fput_object(MINIO_STORAGE_MEDIA_BUCKET_NAME, objName, temp_file_name, size)
+        dest.origin = objName
+        dest.save()
+    os.remove(temp_file_name)
 
 
 def delete_from_icloud(qs, lm):

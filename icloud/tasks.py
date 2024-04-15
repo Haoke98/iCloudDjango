@@ -6,11 +6,15 @@
 @Software: PyCharm
 @disc:
 ======================================="""
-import datetime
+import logging
 
+import requests
 from celery import shared_task, current_task
+from django.core.files.base import ContentFile
 
-from icloud.services import insert_or_update_media, create_icloud_service
+from icloud.models import IMedia, LocalMedia
+from icloud.services import insert_or_update_media, create_icloud_service, delete_from_icloud, \
+    download_prv, download_origin
 
 
 @shared_task(soft_time_limit=3600, time_limit=7200)
@@ -51,3 +55,53 @@ def sync_list(apple_id: str, *args, **kwargs):
                                   processed=i + 1,
                                   extra_process_info={})
     return {"msg": "ok"}
+
+
+@shared_task(soft_time_limit=3600, time_limit=7200)
+def migrate(icloud_media_id: str, *args, **kwargs):
+    # TODO: 实现传惨传cookie文件或者cookie内容,来实现不同的地方免登录操作( 共享cookie )
+    print(f"任务已经启动....{icloud_media_id}")
+    cloudObj = IMedia.objects.filter(id=icloud_media_id).first()
+    apple_id = cloudObj.appleId
+    requires_2fa, iService = create_icloud_service(apple_id)
+    if requires_2fa:
+        return {"msg": "该AppleID需要进行2FA验证", "appleId": apple_id}
+    # TODO: 实现对不同的相册进行iMedia的同步, 选那个相册用参数来控制
+    if cloudObj is not None:
+        localObj, created = LocalMedia.objects.get_or_create(id=cloudObj.id)
+        localObj.filename = cloudObj.filename
+        localObj.ext = cloudObj.ext
+        localObj.size = cloudObj.size
+        localObj.duration = cloudObj.duration
+        localObj.orientation = cloudObj.orientation
+        localObj.dimensionX = cloudObj.dimensionX
+        localObj.dimensionY = cloudObj.dimensionY
+        localObj.adjustmentRenderType = cloudObj.adjustmentRenderType
+        localObj.timeZoneOffset = cloudObj.timeZoneOffset
+        localObj.burstFlags = cloudObj.burstFlags
+
+        localObj.masterRecordChangeTag = cloudObj.masterRecordChangeTag
+        localObj.assetRecordChangeTag = cloudObj.assetRecordChangeTag
+
+        localObj.added_date = cloudObj.added_date
+        localObj.asset_date = cloudObj.asset_date
+
+        localObj.versions = cloudObj.versions
+        localObj.masterRecord = cloudObj.masterRecord
+        localObj.assetRecord = cloudObj.assetRecord
+
+        thumbResp = requests.get(cloudObj.thumbURL)
+        thumbCF = ContentFile(thumbResp.content, f"{cloudObj.filename}.JPG")
+        localObj.thumb = thumbCF
+
+        localObj.save()
+
+        download_prv(cloudObj, localObj)
+
+        download_origin(cloudObj, localObj)
+
+        # resp = delete_from_icloud(cloudObj, localObj)
+    return {
+        'state': True,
+        'msg': f'迁移开始！'
+    }

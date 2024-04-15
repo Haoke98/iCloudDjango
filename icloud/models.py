@@ -220,7 +220,7 @@ class LocalMedia(BaseModel):
     locationEnc = models.TextField(null=True, verbose_name="地址信息(已加密)", blank=True)
     prv = models.FileField(verbose_name="可预览文件", null=True, upload_to=upload_prv,
                            help_text="HICH图片和PNG图片的可预览文件为JPEG图，MOV视频的可预览文件为MP4", blank=True)
-    origin = models.FileField(verbose_name="原始文件", null=True, upload_to=upload_origin, blank=True)
+    origin = models.TextField(verbose_name="原始文件", null=True, blank=True)
     originTest = fields.VideoField(max_length=255, null=True, blank=True, verbose_name="视频原始文件(测试)",
                                    help_text="")
     thumb = fields.ImageField(max_length=255, null=True, blank=True, verbose_name="缩略图", help_text="",
