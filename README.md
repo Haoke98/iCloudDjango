@@ -19,7 +19,15 @@
 ```shell
 pip install django-icloud
 ```
-
+##### 启动Worker
+直接Console启动:
+```shell
+celery -A proj worker -l INFO
+```
+后台启动:
+```shell
+celery -A proj multi start worker1
+```
 ### 引用& 鸣谢
 
 * thanks to [picklepete](https://github.com/picklepete) for [pyicloud](https://github.com/picklepete/pyicloud)
