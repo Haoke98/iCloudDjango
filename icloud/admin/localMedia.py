@@ -6,15 +6,17 @@
 @Software: PyCharm
 @disc:
 ======================================="""
+import datetime
 import urllib
 
 from django.contrib import admin
 from django.http import JsonResponse
-from minio_storage.storage import get_setting
 from simplepro.dialog import MultipleCellDialog, ModalDialog
 
 from icloud.admin.iMedia import ThumbFilter, PrvFilter
 from icloud.models import LocalMedia
+from icloud.services import s3_client
+from proj.settings import MINIO_STORAGE_MEDIA_BUCKET_NAME
 from utils import human_readable_bytes, human_readable_time
 
 
@@ -60,11 +62,12 @@ class LocalMediaAdmin(admin.ModelAdmin):
                 return f"""<span title="{value}">{human_readable_bytes(value)}</span>"""
         if field_name == 'thumb':
             if value:
-                STORAGE_END_POINT = get_setting("MINIO_STORAGE_ENDPOINT")
-                BUCKET_NAME = get_setting("MINIO_STORAGE_MEDIA_BUCKET_NAME")
-                final_url = "http://" + STORAGE_END_POINT + '/' + BUCKET_NAME + '/' + value
-                print(STORAGE_END_POINT, print(final_url))
-                return f"""<img src="{final_url}" style="height:100px;">"""
+                share_link = s3_client.presigned_get_object(
+                    bucket_name=MINIO_STORAGE_MEDIA_BUCKET_NAME,
+                    object_name=value,
+                    expires=datetime.timedelta(minutes=5)
+                )
+                return f"""<img src="{share_link}" style="height:100px;">"""
         if field_name == "duration":
             if value:
                 return f"""<span title="{value}">{human_readable_time(value)}</span>"""

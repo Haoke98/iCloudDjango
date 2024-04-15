@@ -333,10 +333,11 @@ def download_origin(source: IMedia, dest: LocalMedia):
             # _parts.append((part_number, etag))
             # print(f"Uploaded part {part_number}")
             part_number += 1
-    # response = s3_client._complete_multipart_upload(MINIO_STORAGE_MEDIA_BUCKET_NAME, objName, upload_id, _parts)
-    # print(f"upload id: {upload_id}, parts: {_parts}")
-    # temp_file.seek(0)
-        default_storage.save(objName, temp_file)
+        # response = s3_client._complete_multipart_upload(MINIO_STORAGE_MEDIA_BUCKET_NAME, objName, upload_id, _parts)
+        # print(f"upload id: {upload_id}, parts: {_parts}")
+        # temp_file.seek(0)
+        resp = default_storage.save(objName, temp_file)
+        logging.info("文件保存成功:" + str(resp))
         # s3_client.fput_object(MINIO_STORAGE_MEDIA_BUCKET_NAME, objName, temp_file_name, size)
         dest.origin = objName
         dest.save()

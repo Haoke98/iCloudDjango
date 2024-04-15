@@ -11,6 +11,7 @@ import logging
 import requests
 from celery import shared_task, current_task
 from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 
 from icloud.models import IMedia, LocalMedia
 from icloud.services import insert_or_update_media, create_icloud_service, delete_from_icloud, \
@@ -91,8 +92,11 @@ def migrate(icloud_media_id: str, *args, **kwargs):
         localObj.assetRecord = cloudObj.assetRecord
 
         thumbResp = requests.get(cloudObj.thumbURL)
+        thumbObjName = f"LocalMedia/thumb/{cloudObj.filename}.JPG"
         thumbCF = ContentFile(thumbResp.content, f"{cloudObj.filename}.JPG")
-        localObj.thumb = thumbCF
+        resp = default_storage.save(thumbObjName, thumbCF)
+        print("上传Thumb成功:" + str(resp))
+        localObj.thumb = thumbObjName
 
         localObj.save()
 
