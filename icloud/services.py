@@ -344,20 +344,24 @@ def download_origin(source: IMedia, dest: LocalMedia):
     os.remove(temp_file_name)
 
 
-def delete_from_icloud(qs, lm):
-    from .admin import iService
-    resp = iService.delete(json.loads(qs.assetRecord)['recordName'], qs.assetRecordType,
-                           qs.masterRecordChangeTag)
+def delete_from_icloud(iCloudMediaObj, localMedia):
+    apple_id = iCloudMediaObj.appleId
+    requires_2fa, iService = create_icloud_service(apple_id)
+    if requires_2fa:
+        return {"msg": "该AppleID需要进行2FA验证", "appleId": apple_id}
+    # TODO: 实现对不同的相册进行iMedia的同步, 选那个相册用参数来控制
+    resp = iService.delete(json.loads(iCloudMediaObj.assetRecord)['recordName'], iCloudMediaObj.assetRecordType,
+                           iCloudMediaObj.masterRecordChangeTag)
     print(resp.text)
     respJson = resp.json()
     records = respJson["records"]
     record = records[0]
     if record["fields"]["isDeleted"]["value"] == 1:
-        if lm is not None:
-            lm.assetRecordAfterDelete = resp.text
-            lm.detach_icloud_date = datetime.datetime.now()
-            lm.save()
-        qs.delete()
+        if localMedia is not None:
+            localMedia.assetRecordAfterDelete = resp.text
+            localMedia.detach_icloud_date = datetime.datetime.now()
+            localMedia.save()
+        iCloudMediaObj.delete()
     return resp
 
 
