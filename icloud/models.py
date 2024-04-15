@@ -57,10 +57,6 @@ class AppleId(BaseModel):
         else:
             return 0
 
-    class Meta:
-        verbose_name = "AppleID"
-        verbose_name_plural = verbose_name
-
 
 class Album(BaseModel):
     id = models.CharField(max_length=48, editable=False, default=pkHelper.uuid_generator, primary_key=True)
@@ -194,7 +190,6 @@ class IMedia(BaseModel):
 
     class Meta:
         verbose_name = "iCloud媒体"
-        verbose_name_plural = verbose_name
         ordering = ('-asset_date',)
         constraints = [
             models.UniqueConstraint(fields=['id', 'appleId'], name="unique_media_id_appleId")
@@ -238,5 +233,4 @@ class LocalMedia(BaseModel):
 
     class Meta:
         verbose_name = "本地资源"
-        verbose_name_plural = verbose_name
         ordering = ('-asset_date',)

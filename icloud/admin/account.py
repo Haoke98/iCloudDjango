@@ -30,7 +30,7 @@ class AccountAdmin(AjaxAdmin):
         """
         这个方法只有一个request参数，没有其他的入参
         """
-        global iService
+        global _iService
         qs: AppleId = queryset[0]
         print("被选中的用户名:", qs.username, qs.passwd)
         config = {
@@ -52,9 +52,19 @@ class AccountAdmin(AjaxAdmin):
             'labelWidth': "80px",
             'params': []
         }
-        iService = icloud.IcloudService(qs.username, qs.passwd, True)
-        print(f"连接成功！[{iService.requires_2fa}, {iService.requires_2sa}]")
-        if iService.requires_2fa:
+        _iService = icloud.IcloudService(qs.username, qs.passwd, True)
+        print(f"连接成功！[需要2FA:{_iService.requires_2fa}, 需要2SA:{_iService.requires_2sa}]")
+        if _iService.requires_2fa:
+            devices = _iService.trusted_devices
+            print("守信任设备：", devices)
+            options = []
+            for i, device in enumerate(devices):
+                opt = {
+                    'key': i,
+                    'label': device.get('deviceName', "SMS to %s" % device.get('phoneNumber'))
+                }
+                print(opt)
+                options.append(opt)
             config["tips"] = f"正在为账号{qs.username}进行两步验证.....\nTwo-factor authentication required."
             config["params"].append({
                 # 这里的type 对应el-input的原生input属性，默认为input
@@ -138,7 +148,7 @@ class AccountAdmin(AjaxAdmin):
         else:
             code = post.get("code")
             logging.info(f"用户输入的验证码：{code}")
-            result = iService.validate_2fa_code(code)
+            result = _iService.validate_2fa_code(code)
             logging.info("Code validation result: %s" % result)
             if not result:
                 logging.error("Failed to verify security code")
@@ -146,9 +156,9 @@ class AccountAdmin(AjaxAdmin):
                     'status': 'error',
                     'msg': '验证码错误！'
                 })
-            if not iService.is_trusted_session:
+            if not _iService.is_trusted_session:
                 logging.warning("Session is not trusted. Requesting trust...")
-                result = iService.trust_session()
+                result = _iService.trust_session()
                 logging.info("Session trust result %s" % result)
                 if not result:
                     logging.error(
