@@ -104,7 +104,7 @@ def migrate(icloud_media_id: str, *args, **kwargs):
 
         download_origin(cloudObj, localObj)
 
-        # resp = delete_from_icloud(cloudObj, localObj)
+        resp = delete_from_icloud(cloudObj, localObj)
     return {
         'state': True,
         'msg': f'迁移开始！'
