@@ -12,16 +12,18 @@ from datetime import datetime
 from django.contrib import admin
 from django.http import JsonResponse
 from simplepro.admin import FieldOptions
+from simplepro.dialog import ModalDialog
 from simpleui.admin import AjaxAdmin
 
 from utils import icloud
 from ..models import AppleId
+from ..services import create_icloud_service
 
 
 @admin.register(AppleId)
 class AccountAdmin(AjaxAdmin):
     list_display = ['id', 'email', 'tel', 'passwd', 'last2FactorAuthenticateAt', 'last_2fa_time',
-                    'isActive', 'lastConfirmedSessionValidityAt', 'maxSessionAge', 'updatedAt',
+                    'ceil_actions', 'lastConfirmedSessionValidityAt', 'maxSessionAge', 'updatedAt',
                     'createdAt']
     fields = ('email', 'tel', 'passwd', 'info')
     actions = ['two_factor_authenticate']
@@ -169,15 +171,21 @@ class AccountAdmin(AjaxAdmin):
     two_factor_authenticate.icon = 'el-icon-view'
     two_factor_authenticate.layer = async_get_layer_config
 
-    def isActive(self, obj: AppleId):
+    def ceil_actions(self, obj: AppleId):
         # FIXME: 修复这里,改成2FA验证是否还有效.
-        # if iService is not None:
-        #     if obj.username == iService.user.get("accountName"):
-        #         return '<el-radio value="1" label="1">已被选中</el-radio>'
-        # else:
-        return '<el-radio value="1" label="2"><a href="#">点击选择</a></el-radio>'
+        modal = ModalDialog()
+        modal.width = "800"
+        modal.height = "400"
+        # 这个是单元格显示的文本
+        modal.cell = f'<el-link type="primary">查看剩余空间</el-link>'
+        modal.title = "用户列表"
+        # 是否显示取消按钮
+        modal.show_cancel = True
+        # 这里的url可以写死，也可以用django的反向获取url，可以根据model的数据，传到url中
+        modal.url = '/icloud/account/storage?appleId=' + obj.email
+        return modal
 
-    isActive.short_description = "被选中"
+    ceil_actions.short_description = "特殊操作"
 
     fields_options = {
         'id': FieldOptions.UUID,
@@ -198,8 +206,9 @@ class AccountAdmin(AjaxAdmin):
             'align': 'center'
         },
         'maxSessionAge': FieldOptions.DURATION,
-        'isActive': {
+        'ceil_actions': {
             'min_width': '160px',
-            'align': 'center'
+            'align': 'center',
+            'fixed': 'right'
         },
     }

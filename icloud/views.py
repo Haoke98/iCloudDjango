@@ -4,6 +4,7 @@ import json
 import tempfile
 import threading
 
+from django.contrib.auth.decorators import login_required
 from django.core.files.storage import default_storage
 from django.http import HttpResponse, JsonResponse, Http404, HttpResponseRedirect
 from django.shortcuts import render
@@ -110,6 +111,7 @@ def test2(targetObj):
     return context
 
 
+@login_required
 def preview(request):
     """
     预览页面，包括视频播放和图片的展示
@@ -150,6 +152,7 @@ def preview(request):
     return render(request, "icloud/detail.html", context=context)
 
 
+@login_required
 def detail(request):
     """
     预览页面，包括视频播放和图片的展示
@@ -241,3 +244,15 @@ def upload_file(request):
 
         res = {"success": 1, "message": "上传成功!", "url": relative_file_path}
         return JsonResponse(res)
+
+
+@login_required
+def storage(request):
+    if request.method == 'GET':
+        appleId = request.GET.get('appleId', None)
+        require2fa, _iService = create_icloud_service(appleId)
+        if require2fa:
+            raise Exception("2FA required to create icloud service.")
+        html_str = f'<span>{_iService.account.storage}</span>'
+        print(html_str)
+        return HttpResponse(html_str)
