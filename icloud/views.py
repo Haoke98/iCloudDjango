@@ -253,6 +253,13 @@ def storage(request):
         require2fa, _iService = create_icloud_service(appleId)
         if require2fa:
             raise Exception("2FA required to create icloud service.")
-        html_str = f'<span>{_iService.account.storage}</span>'
+        _devices = _iService.account.devices
+        print("devices:", _devices)
+        try:
+            _storage = _iService.account.storage
+        except Exception as e:
+            pass
+        print("storage:", _storage)
+        html_str = f'<span>{_storage}</span>'
         print(html_str)
         return HttpResponse(html_str)

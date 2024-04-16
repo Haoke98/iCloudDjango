@@ -17,7 +17,6 @@ from simpleui.admin import AjaxAdmin
 
 from utils import icloud
 from ..models import AppleId
-from ..services import create_icloud_service
 
 
 @admin.register(AppleId)
